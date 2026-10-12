@@ -1,0 +1,10 @@
+Pillow
+pytesseract
+PyMuPDF
+requests
+beautifulsoup4
+trafilatura
+openai-whisper
+google-genai
+tavily-python
+python-dotenv
