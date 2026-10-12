@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f2">
+  <title>Whisper Desk · Speech to text</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Whisper Desk home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+        <span>whisper<span class="brand-light">desk</span></span>
+      </a>
+      <div class="local-pill"><span class="status-dot"></span>Runs on your device</div>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <div class="eyebrow"><span class="eyebrow-line"></span>YOUR AUDIO, IN WORDS</div>
+      <h1 id="page-title">Let your audio<br><span>do the talking.</span></h1>
+      <p class="intro-copy">Turn a recording into a clear transcript in seconds.<br class="desktop-break"> Private, simple, and powered by Whisper on your computer.</p>
+    </section>
+
+    <section class="workspace" aria-label="Audio transcription">
+      <div class="input-card">
+        <div class="card-heading">
+          <div>
+            <span class="step-label">STEP 01</span>
+            <h2>Bring in your audio</h2>
+          </div>
+          <span class="model-tag"><span class="model-pulse"></span>{{ model_name }} model</span>
+        </div>
+
+        <div class="source-grid">
+          <div class="upload-panel">
+            <div class="panel-icon file-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M13.5 3.75H7.75A1.75 1.75 0 0 0 6 5.5v13A1.75 1.75 0 0 0 7.75 20.25h8.5A1.75 1.75 0 0 0 18 18.5V8.25L13.5 3.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13.25 4v4.5h4.5M9 13h6m-6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="panel-title">Upload an audio file</div>
+            <p class="panel-copy">MP3, WAV, M4A, WebM and more<br>Up to {{ max_upload_mb }} MB</p>
+            <form id="audio-form" data-max-upload-bytes="{{ max_upload_bytes }}" data-max-upload-mb="{{ max_upload_mb }}">
+              <label class="file-picker" for="audio-file">
+                <span id="file-label">Choose a file</span>
+                <input id="audio-file" name="file" type="file" accept=".mp3,.wav,.m4a,.webm,.mp4,.mpeg,.mpga,.ogg,.flac,.aac">
+              </label>
+              <span id="selected-file" class="selected-file" aria-live="polite">No file selected</span>
+              <button class="button button-primary transcribe-button" id="transcribe-button" type="submit" disabled>
+                Transcribe audio <span aria-hidden="true">↗</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="divider" aria-hidden="true"><span>OR</span></div>
+
+          <div class="record-panel">
+            <div class="panel-icon mic-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3.75" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M6.75 11.25v.75a5.25 5.25 0 0 0 10.5 0v-.75M12 17.25v3m-3 0h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div class="panel-title">Record with your mic</div>
+            <p class="panel-copy">Speak naturally. Your recording<br>stays on this device.</p>
+            <div class="record-controls">
+              <button class="button button-outline" id="record-button" type="button"><span class="record-dot"></span>Start recording</button>
+              <button class="button button-stop" id="stop-button" type="button" hidden><span class="stop-square"></span>Stop & transcribe</button>
+              <span id="recording-time" class="recording-time" aria-live="polite" hidden>00:00</span>
+            </div>
+            <span class="record-hint" id="record-hint">Microphone access is requested by your browser.</span>
+          </div>
+        </div>
+
+        <div class="options-row">
+          <div class="language-label"><span class="language-icon" aria-hidden="true">文</span><div><strong>Audio language</strong><small id="language-selection-status" aria-live="polite">Selected: Auto-detect.</small></div></div>
+          <label class="select-wrap" for="language-select">
+            <select id="language-select" name="language">
+              <option value="auto">Auto-detect</option>
+              <option value="en">English</option>
+              <option value="hi">Hindi · हिन्दी</option>
+              <option value="gu">Gujarati · ગુજરાતી</option>
+            </select>
+            <span class="select-chevron" aria-hidden="true">⌄</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden>
+        <span class="notice-icon" aria-hidden="true"></span><span id="notice-text"></span>
+      </div>
+
+      <section class="transcript-card" id="transcript-card" aria-labelledby="transcript-heading" hidden>
+        <div class="transcript-heading-row">
+          <div>
+            <span class="step-label">STEP 02</span>
+            <h2 id="transcript-heading">Your transcript</h2>
+          </div>
+          <button class="button button-download" id="download-button" type="button" disabled>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.75v9m0 0 3.25-3.25M10 11.75 6.75 8.5M3.75 13v2.25c0 .55.45 1 1 1h10.5c.55 0 1-.45 1-1V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download .txt
+          </button>
+        </div>
+        <div id="transcript-text" class="transcript-text" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <footer class="footer">
+      <span><span class="footer-lock" aria-hidden="true">◈</span> Your audio is processed locally and deleted after transcription.</span>
+      <span class="footer-whisper">Powered by OpenAI Whisper <span>·</span> no API key needed</span>
+    </footer>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>
