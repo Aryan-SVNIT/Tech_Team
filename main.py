@@ -7,6 +7,7 @@ from pdf_input import extract_pdf_text
 from url_input import extract_article
 from audio_input import transcribe_audio
 from fact_checker import fact_check, save_report
+from text_normalizer import normalize_extracted_text
 
 BASE_DIR = Path(__file__).resolve().parent
 REPORT_DIR = BASE_DIR / "reports"
@@ -53,7 +54,15 @@ def main():
     while True:
         text, metadata = acquire_input()
         if text == "EXIT": print("Goodbye!"); break
-        if text is None: continue
+        if text is None:
+            continue
+
+        text = normalize_extracted_text(text)
+
+        if not text:
+            print("No text remains after normalization.")
+            continue
+
         print("\n========== EXTRACTED TEXT PREVIEW ==========")
         print("Input type:", metadata["input_type"], "| Characters:", len(text))
         print(text[:1200] + ("\n...[preview truncated]" if len(text) > 1200 else ""))

@@ -19,7 +19,13 @@ def _get_clients():
     gkey, tkey = os.getenv("GEMINI_API_KEY"), os.getenv("TAVILY_API_KEY")
     if not gkey or not tkey:
         raise FactCheckError("Missing GEMINI_API_KEY or TAVILY_API_KEY. Check your local .env file.")
-    return genai.Client(api_key=gkey), TavilyClient(api_key=tkey)
+    return (
+        genai.Client(
+            api_key=gkey,
+            http_options=types.HttpOptions(timeout=30000),
+        ),
+        TavilyClient(api_key=tkey),
+    )   
 
 def _generate_json(client, prompt, retries=2):
     last_error = None
@@ -27,7 +33,12 @@ def _generate_json(client, prompt, retries=2):
         try:
             response = client.models.generate_content(
                 model=GEMINI_MODEL, contents=prompt,
-                config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.1),
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    thinking_config=types.ThinkingConfig(
+                    thinking_level="minimal"
+                    ),
+                )
             )
             raw = (response.text or "").strip()
             if not raw:
@@ -83,7 +94,7 @@ SOURCE TEXT:
 {text[:12000]}
 </user_text>
 '''
-    data = _generate_json(client, prompt)
+    data = _generate_json(client, prompt, retries=1)
 
     items = data.get("claims", []) if isinstance(data, dict) else []
     claims, seen = [], set()
@@ -573,7 +584,15 @@ def _canonical_url(url):
 
 def fact_check(text, input_metadata=None):
     gemini, tavily = _get_clients()
+    start_time = time.perf_counter()
+
     claims = extract_claims(gemini, text)
+
+    elapsed = time.perf_counter() - start_time
+    print(
+        f"\nClaim extraction completed in {elapsed:.2f} seconds. "
+        f"Claims found: {len(claims)}"
+    )
     output = []
     for i, item in enumerate(claims, 1):
         print(f"\n[{i}/{len(claims)}] Searching evidence for: {item['claim']}")
