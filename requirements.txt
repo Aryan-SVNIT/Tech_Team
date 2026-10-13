@@ -8,3 +8,4 @@ openai-whisper
 google-genai
 tavily-python
 python-dotenv
+supabase

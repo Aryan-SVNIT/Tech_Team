@@ -62,8 +62,49 @@ def main():
             print("Saved extracted text only."); continue
         try:
             print("\nExtracting claims and searching for evidence...")
-            report = fact_check(text); report["input_metadata"] = metadata
+            report = fact_check(text, metadata)
+
+            # Preserve where the original text came from.
+            report["input_metadata"] = metadata
+            report["provenance"] = {
+                "input_type": metadata.get("input_type"),
+                "original_source": metadata.get("source"),
+                "original_title": metadata.get("title"),
+                "extracted_text_characters": len(text),
+                "note": (
+                    "This identifies the original input source. "
+                    "It is not independent corroboration by itself."
+                ),
+            }
+
+            if metadata.get("input_type") == "url":
+                report["provenance"]["source_role"] = (
+                    "Original webpage from which the text was extracted"
+                )
+            else:
+                report["provenance"]["source_role"] = (
+                    "Original user-provided input"
+                )
+
             jp, mp = save_report(report, REPORT_DIR)
+            try:
+                from supabase_store import save_report_to_supabase
+
+                db_report_id = save_report_to_supabase(
+                    report,
+                    text,
+                    metadata,
+                )
+                print("\nSupabase report ID:", db_report_id)
+
+            except Exception as db_exc:
+                print(
+                    "\nSupabase save failed; "
+                    "local reports are still saved."
+                )
+                print(
+                    f"Database error: {type(db_exc).__name__}: {db_exc}"
+                )
             print("\n========== FACT-CHECK SUMMARY ==========")
             if not report["claims"]: print("No checkable factual claims found.")
             for i, item in enumerate(report["claims"], 1):
